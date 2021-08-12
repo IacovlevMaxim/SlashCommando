@@ -1,0 +1,22 @@
+{
+  "name": "commando",
+  "version": "1.0.0",
+  "description": "New discord Commando for slash commands usage",
+  "main": "./src/index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "exports": {
+    "./*": "./*",
+    ".": {
+      "require": "./src/index.js"
+    }
+  },
+  "keywords": [],
+  "author": "Stew",
+  "license": "ISC",
+  "engines": {
+    "node": ">=16.6.0",
+    "npm": ">=7.0.0"
+  }
+}
