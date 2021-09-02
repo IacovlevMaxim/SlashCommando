@@ -66,24 +66,35 @@ class Command {
 		switch(reason) {
 			case 'permission': {
 				if(data.response) return interaction.reply(data.response);
-				return interaction.reply(`You do not have permission to use the \`${this.name}\` command.`);
+				return interaction.reply({
+                    content: `You do not have permission to use the \`${this.name}\` command.`,
+                    ephemeral: true
+                });
 			}
 			case 'clientPermissions': {
 				if(data.missing.length === 1) {
-					return interaction.reply(
-						`I need the "${permissions[data.missing[0]]}" permission for the \`${this.name}\` command to work.`
-					);
+					return interaction.reply({
+                        content: `I need the "${permissions[data.missing[0]]}" permission for the \`${this.name}\` command to work.`,
+                        ephemeral: true
+                    });
 				}
-				return interaction.reply(oneLine`
+				return interaction.reply({
+                    content: oneLine`
 					I need the following permissions for the \`${this.name}\` command to work:
-					${data.missing.map(perm => permissions[perm]).join(', ')}
-				`);
+					${data.missing.map(perm => permissions[perm]).join(', ')}`,
+                    ephemeral: true
+                });
 			}
 			case 'throttling': {
-				return interaction.reply(
-					`You may not use the \`${this.name}\` command again for another ${data.remaining.toFixed(1)} seconds.`
-				);
+				return interaction.reply({
+                    content: `You may not use the \`${this.name}\` command again for another ${data.remaining.toFixed(1)} seconds.`,
+                    ephemeral: true
+                });
 			}
+            case 'invalidArg':
+                return interaction.reply({
+                    content: data.message
+                })
 			default:
 				return null;
 		}
@@ -91,11 +102,13 @@ class Command {
 
     onError(err, interaction) {
         const owner = this.client.application.owner;
-        return interaction.reply(stripIndent`
+        const response = stripIndent`
             An error occured when running the command: \`${err.name}: ${err.message}\`
             You should not have received this error.
             Please contact ${owner.username}#${owner.tag} in this server: https://discord.gg/dXES6RYtAq
-        `);
+        `;
+        console.error(err);
+        return interaction.replied ? interaction.followUp(response) : interaction.reply(response);
     }
 
     static transformOption(option, received) {

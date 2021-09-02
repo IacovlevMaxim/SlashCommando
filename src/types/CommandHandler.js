@@ -62,8 +62,15 @@ class CommandHandler {
 	}
 
 	async onCommand(interaction) {
-		const command = this.commands.find(c => c.name == interaction.commandName);
-		if(!command) throw new Error(`Unknown command '${interaction.commandName}' was triggered`);
+		const commandType = interaction.token ? 'interaction' : 'message';
+		const commandName = commandType === 'interaction' 
+							? 
+							interaction.commandName 
+							: 
+							interaction.content.split(' ').shift().split(this.client.prefix)[1].toLowerCase();
+
+		const command = this.commands.find(c => c.name == commandName);
+		if(!command) return;//throw new Error(`Unknown command '${commandName}' was triggered`);
 		
 		const noPerms = command.hasPermission(interaction);
 		if(typeof noPerms === 'string') {
@@ -80,7 +87,7 @@ class CommandHandler {
 			}
 		}
 
-		const throttle = command.throttle(interaction.user.id);
+		const throttle = command.throttle(commandType === 'interaction' ? interaction.user.id : interaction.author.id);
 		if(throttle && throttle.usages + 1 > command.throttling.usages) {
 			const remaining = (throttle.start + (command.throttling.duration * 1000) - Date.now()) / 1000;
 			const data = { throttle, remaining };
@@ -90,18 +97,74 @@ class CommandHandler {
 
 		if(throttle) throttle.usages++;
 
+		let args;
+		try {
+			args = commandType === 'interaction' ? this.parseInteractionArgs(interaction) : this.parseMessageArgs(interaction, command);
+		} catch(err) {
+			return command.onBlock(interaction, 'invalidArg', {
+				message: err
+			});
+		}
+
+		try {
+			await command.run(interaction, args);
+		} catch(err) {
+			return command.onError(err, interaction);
+		}
+	}
+
+	parseInteractionArgs(interaction) {
 		const args = Object.assign({}, ...interaction.options?._hoistedOptions.map(o => {
 			let res = {};
 			res[o.name] = o.value;
 			return res;
 		}));
+		return args;
+	}
 
-		try {
-			await command.run(interaction, args);
+	parseMessageArgs(message, command) {
+		let messageArgs = message.content.split(' ');
+		messageArgs.shift();
+		let args = {};
+		for(let i = 0;i < command.options.length;i++) {
+			const optionName = command.options[i].name;
+			try {
+				this.validateArg(command.options[i], messageArgs[i]);
+			} catch(data) {
+				throw data;
+			}
+			args[optionName] = this.parseMessageArg(command.options[i], messageArgs[i]);
+		}
+		return args;
+	}
 
-			if(!interaction.replied) throw new Error(`Interaction from command '${command.name}' must receive a reply`);
-		} catch(err) {
-			return command.onError(err, interaction);
+	parseMessageArg(commandOption, messageArg) {
+		switch(commandOption.type) {
+			case 'STRING':
+				return messageArg;
+
+			case 'CHANNEL':
+				return messageArg.match(/<#(\d+)>/)[1];
+			
+			case 'NUMBER':
+				return Number(messageArg);
+		}
+	}
+
+	validateArg(commandOption, arg) {
+		switch(commandOption.type) {
+			case 'STRING':
+				return;
+			
+			case 'NUMBER':
+				if(isNaN(arg)) throw `Option '${commandOption.name}' must be a number`
+			break;
+
+			case 'CHANNEL':
+				if( !arg.match(/<#(\d+)>/) || isNaN(arg.match(/<#(\d+)>/)[1]) ) {
+					throw `Option '${commandOption.name}' must be a channel`;
+				}
+			break;
 		}
 	}
 
