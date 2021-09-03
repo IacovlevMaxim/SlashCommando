@@ -6,7 +6,7 @@ class MessageCall extends Message {
 
         this.commandType = 'message';
         this.commandName = super.toString().split(' ').shift().split(this.client.prefix)[1].toLowerCase();
-        this.user = super.author;
+        this.user = this.author;
         this.replied = false;
         this.deferred = false;
     }
