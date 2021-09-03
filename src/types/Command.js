@@ -93,7 +93,8 @@ class Command {
 			}
             case 'invalidArg':
                 return interaction.reply({
-                    content: data.message
+                    content: data.message,
+                    ephemeral: true
                 })
 			default:
 				return null;

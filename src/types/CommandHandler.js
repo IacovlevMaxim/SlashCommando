@@ -1,4 +1,7 @@
 const { ApplicationCommand } = require('discord.js');
+const InteractionCall = require('./InteractionCall');
+const p = require('phin');
+const MessageCall = require('./MessageCall');
 
 class CommandHandler {
     constructor(client) {
@@ -61,110 +64,67 @@ class CommandHandler {
 		return this.commands;
 	}
 
-	async onCommand(interaction) {
-		const commandType = interaction.token ? 'interaction' : 'message';
-		const commandName = commandType === 'interaction' 
-							? 
-							interaction.commandName 
-							: 
-							interaction.content.split(' ').shift().split(this.client.prefix)[1].toLowerCase();
+	async onCommand(callData) {
+		const call = callData.token 
+					 ? 
+					 new InteractionCall(callData.client, callData) 
+					 : 
+					 new MessageCall(callData.client, 
+						await p({
+							"url": `https://discord.com/api/v6/channels/${callData.channel.id}/messages/${callData.id}`,
+							"method": "GET",
+							"headers": {
+								"Authorization": `Bot ${callData.client.token}`
+							}
+						}).then(res => JSON.parse(res.body)));
 
-		const command = this.commands.find(c => c.name == commandName);
+		const command = this.commands.find(c => c.name == call.commandName);
 		if(!command) return;//throw new Error(`Unknown command '${commandName}' was triggered`);
 		
-		const noPerms = command.hasPermission(interaction);
+		const noPerms = command.hasPermission(call);
 		if(typeof noPerms === 'string') {
 			const data = { response: typeof hasPermission === 'string' ? hasPermission : undefined };
-			return command.onBlock(interaction, 'permission', data);
+			return command.onBlock(call, 'permission', data);
+		}
+
+		if(!call.channel) {
+			await call.channel.fetch();
 		}
 
 		if(command.clientPermissions) {
-			const missing = interaction.channel.permissionsFor(interaction.client.user).missing(command.clientPermissions, false);
+			const missing = call.channel.permissionsFor(call.client.user).missing(command.clientPermissions, false);
 			if(missing.length > 0) {
 				const data = { missing };
 				// this.client.emit('commandBlock', this, 'clientPermissions', data);
-				return command.onBlock(interaction, 'clientPermissions', data);
+				return command.onBlock(call, 'clientPermissions', data);
 			}
 		}
 
-		const throttle = command.throttle(commandType === 'interaction' ? interaction.user.id : interaction.author.id);
+		const throttle = command.throttle(call.user);
 		if(throttle && throttle.usages + 1 > command.throttling.usages) {
 			const remaining = (throttle.start + (command.throttling.duration * 1000) - Date.now()) / 1000;
 			const data = { throttle, remaining };
 			// this.client.emit('commandBlock', this, 'throttling', data);
-			return command.onBlock(interaction, 'throttling', data);
+			return command.onBlock(call, 'throttling', data);
 		}
 
 		if(throttle) throttle.usages++;
 
 		let args;
-		try {
-			args = commandType === 'interaction' ? this.parseInteractionArgs(interaction) : this.parseMessageArgs(interaction, command);
-		} catch(err) {
-			return command.onBlock(interaction, 'invalidArg', {
-				message: err
-			});
-		}
-
-		try {
-			await command.run(interaction, args);
-		} catch(err) {
-			return command.onError(err, interaction);
-		}
-	}
-
-	parseInteractionArgs(interaction) {
-		const args = Object.assign({}, ...interaction.options?._hoistedOptions.map(o => {
-			let res = {};
-			res[o.name] = o.value;
-			return res;
-		}));
-		return args;
-	}
-
-	parseMessageArgs(message, command) {
-		let messageArgs = message.content.split(' ');
-		messageArgs.shift();
-		let args = {};
-		for(let i = 0;i < command.options.length;i++) {
-			const optionName = command.options[i].name;
+		if(command.options.length > 0) {
 			try {
-				this.validateArg(command.options[i], messageArgs[i]);
-			} catch(data) {
-				throw data;
+				args = call.parseArgs(callData, command);
+			} catch(err) {
+				return command.onBlock(call, 'invalidArg', {
+					message: `${err}`
+				});
 			}
-			args[optionName] = this.parseMessageArg(command.options[i], messageArgs[i]);
 		}
-		return args;
-	}
 
-	parseMessageArg(commandOption, messageArg) {
-		switch(commandOption.type) {
-			case 'STRING':
-				return messageArg;
-
-			case 'CHANNEL':
-				return messageArg.match(/<#(\d+)>/)[1];
-			
-			case 'NUMBER':
-				return Number(messageArg);
-		}
-	}
-
-	validateArg(commandOption, arg) {
-		switch(commandOption.type) {
-			case 'STRING':
-				return;
-			
-			case 'NUMBER':
-				if(isNaN(arg)) throw `Option '${commandOption.name}' must be a number`
-			break;
-
-			case 'CHANNEL':
-				if( !arg.match(/<#(\d+)>/) || isNaN(arg.match(/<#(\d+)>/)[1]) ) {
-					throw `Option '${commandOption.name}' must be a channel`;
-				}
-			break;
+		try {
+			await command.run(call, args);
+		} catch(err) {
+			return command.onError(err, call);
 		}
 	}
 
