@@ -62,12 +62,9 @@ class MessageCall extends Message {
 	}
 
 	validateArg(commandOption, arg) {
-        console.log(commandOption);
-        console.log({a: arg});
         if(commandOption.required && (!arg || arg.length < 1)) {
             throw `Option '${commandOption.name}' is required`
         } 
-        console.log(`${!commandOption.required} && ${!arg}`);
         if(!commandOption.required && !arg) return;
 		switch(commandOption.type) {
 			case 'STRING':
