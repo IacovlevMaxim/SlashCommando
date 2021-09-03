@@ -103,7 +103,11 @@ class Command {
 
     onError(err, interaction) {
         const owner = this.client.application.owner;
-        const response = stripIndent`
+        const response = err.message == 'Cannot read property \'collection\' of undefined' 
+                         ? 
+                         'Promobot is starting its processes. Please retry in a few minutes'
+                         :
+                         stripIndent`
             An error occured when running the command: \`${err.name}: ${err.message}\`
             You should not have received this error.
             Please contact ${owner.username}#${owner.tag} in this server: https://discord.gg/dXES6RYtAq
