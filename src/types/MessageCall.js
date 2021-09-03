@@ -54,7 +54,7 @@ class MessageCall extends Message {
 				return messageArg;
 
 			case 'CHANNEL':
-				return messageArg.match(/<#(\d+)>/)[1];
+				return messageArg?.match(/<#(\d+)>/)[1];
 			
 			case 'NUMBER':
 				return Number(messageArg);
@@ -62,6 +62,13 @@ class MessageCall extends Message {
 	}
 
 	validateArg(commandOption, arg) {
+        console.log(commandOption);
+        console.log({a: arg});
+        if(commandOption.required && (!arg || arg.length < 1)) {
+            throw `Option '${commandOption.name}' is required`
+        } 
+        console.log(`${!commandOption.required} && ${!arg}`);
+        if(!commandOption.required && !arg) return;
 		switch(commandOption.type) {
 			case 'STRING':
 				return;
@@ -71,7 +78,7 @@ class MessageCall extends Message {
 			break;
 
 			case 'CHANNEL':
-				if(!arg || !arg.match(/<#(\d+)>/) || isNaN(arg.match(/<#(\d+)>/)[1]) ) {
+				if(!arg.match(/<#(\d+)>/) || isNaN(arg.match(/<#(\d+)>/)[1]) ) {
 					throw `Option '${commandOption.name}' must be a channel`;
 				}
 			break;

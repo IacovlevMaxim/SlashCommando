@@ -1,4 +1,6 @@
-const InteractionResponses = require('../../../discord.js/src/structures/interfaces/InteractionResponses.js');
+// const InteractionResponses = require('../../../discord.js/src/structures/interfaces/InteractionResponses.js');
+const { join, dirname } = require('path');
+const InteractionResponses = require(join(dirname(require.resolve('discord.js/package.json')), '/src/structures/interfaces/InteractionResponses.js'));
 const { Interaction, InteractionWebhook } = require('discord.js');
 
 class InteractionCall extends Interaction {

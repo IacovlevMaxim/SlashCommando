@@ -111,7 +111,7 @@ class CommandHandler {
 		if(throttle) throttle.usages++;
 
 		let args;
-		if(command.options.length > 0) {
+		if(command.options?.length > 0) {
 			try {
 				args = call.parseArgs(callData, command);
 			} catch(err) {
