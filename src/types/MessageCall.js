@@ -36,6 +36,17 @@ class MessageCall extends Message {
 		let messageArgs = message.content.split(' ');
 		messageArgs.shift();
 		let args = {};
+		if(command.options.length === 1) {
+			const optionName = command.options[0].name;
+			const arg = messageArgs.join(' ');
+			try {
+				this.validateArg(command.options[0], arg);
+			} catch(data) {
+				throw data;
+			}
+			args[optionName] = this.parseArg(command.options[0], arg);
+			return args;
+		}
 		for(let i = 0;i < command.options.length;i++) {
 			const optionName = command.options[i].name;
 			try {
@@ -63,7 +74,7 @@ class MessageCall extends Message {
 
 	validateArg(commandOption, arg) {
         if(commandOption.required && (!arg || arg.length < 1)) {
-            throw `Option '${commandOption.name}' is required`
+            throw `Option '${commandOption.name}' is required`;
         } 
         if(!commandOption.required && !arg) return;
 		switch(commandOption.type) {
@@ -71,7 +82,7 @@ class MessageCall extends Message {
 				return;
 			
 			case 'NUMBER':
-				if(isNaN(arg)) throw `Option '${commandOption.name}' must be a number`
+				if(isNaN(arg)) throw `Option '${commandOption.name}' must be a number`;
 			break;
 
 			case 'CHANNEL':
