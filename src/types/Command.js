@@ -73,17 +73,21 @@ class Command {
 			}
 			case 'clientPermissions': {
 				if(data.missing.length === 1) {
-					return interaction.reply({
+                    const reply = {
                         content: `I need the "${permissions[data.missing[0]]}" permission for the \`${this.name}\` command to work.`,
                         ephemeral: true
-                    });
+                    };
+					return interaction.reply(reply)
+                    .catch(interaction.user.send(reply));
 				}
-				return interaction.reply({
+                const reply = {
                     content: oneLine`
 					I need the following permissions for the \`${this.name}\` command to work:
 					${data.missing.map(perm => permissions[perm]).join(', ')}`,
                     ephemeral: true
-                });
+                };
+				return interaction.reply(reply)
+                .catch(interaction.user.send(reply));
 			}
 			case 'throttling': {
 				return interaction.reply({

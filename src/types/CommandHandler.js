@@ -60,7 +60,8 @@ class CommandHandler {
 
 	init(commands) {
 		this.owner = this.client.application.owner;
-		this.commands = commands.map(command => new command(this.client));
+		const allCommands = commands.map(command => new command(this.client));
+		this.commands = allCommands.map(cmd => cmd.name == 'help' ? new cmd.constructor(cmd.client, allCommands) : cmd);
 		return this.commands;
 	}
 
