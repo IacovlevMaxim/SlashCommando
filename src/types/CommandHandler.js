@@ -72,7 +72,7 @@ class CommandHandler {
 					 : 
 					 new MessageCall(callData.client, 
 						await p({
-							"url": `https://discord.com/api/v6/channels/${callData.channel.id}/messages/${callData.id}`,
+							"url": `https://discord.com/api/v8/channels/${callData.channel.id}/messages/${callData.id}`,
 							"method": "GET",
 							"headers": {
 								"Authorization": `Bot ${callData.client.token}`
