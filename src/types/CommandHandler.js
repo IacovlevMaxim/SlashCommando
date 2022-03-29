@@ -1,7 +1,6 @@
 const { ApplicationCommand } = require('discord.js');
 const InteractionCall = require('./InteractionCall');
 const p = require('phin');
-const MessageCall = require('./MessageCall');
 
 class CommandHandler {
     constructor(client) {
@@ -66,18 +65,7 @@ class CommandHandler {
 	}
 
 	async onCommand(callData) {
-		const call = callData.token 
-					 ? 
-					 new InteractionCall(callData.client, callData) 
-					 : 
-					 new MessageCall(callData.client, 
-						await p({
-							"url": `https://discord.com/api/v8/channels/${callData.channel.id}/messages/${callData.id}`,
-							"method": "GET",
-							"headers": {
-								"Authorization": `Bot ${callData.client.token}`
-							}
-						}).then(res => JSON.parse(res.body)));
+		const call = new InteractionCall(callData.client, callData);
 
 		const command = this.commands.find(c => c.name == call.commandName);
 		if(!command) return;//throw new Error(`Unknown command '${commandName}' was triggered`);
@@ -96,7 +84,6 @@ class CommandHandler {
 			const missing = call.channel.permissionsFor(call.client.user).missing(command.clientPermissions, false);
 			if(missing.length > 0) {
 				const data = { missing };
-				// this.client.emit('commandBlock', this, 'clientPermissions', data);
 				return command.onBlock(call, 'clientPermissions', data);
 			}
 		}
@@ -105,7 +92,6 @@ class CommandHandler {
 		if(throttle && throttle.usages + 1 > command.throttling.usages) {
 			const remaining = (throttle.start + (command.throttling.duration * 1000) - Date.now()) / 1000;
 			const data = { throttle, remaining };
-			// this.client.emit('commandBlock', this, 'throttling', data);
 			return command.onBlock(call, 'throttling', data);
 		}
 

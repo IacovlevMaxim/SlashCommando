@@ -77,8 +77,7 @@ class Command {
                         content: `I need the "${permissions[data.missing[0]]}" permission for the \`${this.name}\` command to work.`,
                         ephemeral: true
                     };
-					return interaction.reply(reply)
-                    .catch(interaction.user.send(reply));
+                    return interaction.reply(reply);
 				}
                 const reply = {
                     content: oneLine`
@@ -87,7 +86,6 @@ class Command {
                     ephemeral: true
                 };
 				return interaction.reply(reply)
-                .catch(interaction.user.send(reply));
 			}
 			case 'throttling': {
 				return interaction.reply({
