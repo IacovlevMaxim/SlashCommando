@@ -64,35 +64,33 @@ class CommandHandler {
 		return this.commands;
 	}
 
-	async onCommand(callData) {
-		const call = new InteractionCall(callData.client, callData);
-
-		const command = this.commands.find(c => c.name == call.commandName);
+	async onCommand(interaction) {
+		const command = this.commands.find(c => c.name == interaction.commandName);
 		if(!command) return;//throw new Error(`Unknown command '${commandName}' was triggered`);
 		
-		const noPerms = command.hasPermission(call);
+		const noPerms = command.hasPermission(interaction);
 		if(typeof noPerms === 'string') {
 			const data = { response: typeof hasPermission === 'string' ? hasPermission : undefined };
-			return command.onBlock(call, 'permission', data);
+			return command.onBlock(interaction, 'permission', data);
 		}
 
-		if(!call.channel) {
-			await call.channel.fetch();
+		if(!interaction.channel) {
+			await interaction.channel.fetch();
 		}
 
 		if(command.clientPermissions) {
-			const missing = call.channel.permissionsFor(call.client.user).missing(command.clientPermissions, false);
+			const missing = interaction.channel.permissionsFor(interaction.client.user).missing(command.clientPermissions, false);
 			if(missing.length > 0) {
 				const data = { missing };
-				return command.onBlock(call, 'clientPermissions', data);
+				return command.onBlock(interaction, 'clientPermissions', data);
 			}
 		}
 
-		const throttle = command.throttle(call.user);
+		const throttle = command.throttle(interaction.user);
 		if(throttle && throttle.usages + 1 > command.throttling.usages) {
 			const remaining = (throttle.start + (command.throttling.duration * 1000) - Date.now()) / 1000;
 			const data = { throttle, remaining };
-			return command.onBlock(call, 'throttling', data);
+			return command.onBlock(interaction, 'throttling', data);
 		}
 
 		if(throttle) throttle.usages++;
@@ -100,19 +98,28 @@ class CommandHandler {
 		let args;
 		if(command.options?.length > 0) {
 			try {
-				args = call.parseArgs(callData, command);
+				args = CommandHandler.parseArgs(interaction, command);
 			} catch(err) {
-				return command.onBlock(call, 'invalidArg', {
+				return command.onBlock(interaction, 'invalidArg', {
 					message: `${err}`
 				});
 			}
 		}
 
 		try {
-			await command.run(call, args);
+			await command.run(interaction, args);
 		} catch(err) {
-			return command.onError(err, call);
+			return command.onError(err, interaction);
 		}
+	}
+
+	static parseArgs(interaction) {
+		const args = Object.assign({}, ...interaction.options?._hoistedOptions.map(o => {
+			let res = {};
+			res[o.name] = o.value;
+			return res;
+		}));
+		return args;
 	}
 
 	static transformCommand(command) {
