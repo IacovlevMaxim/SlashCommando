@@ -1,5 +1,6 @@
 const { Client } = require("discord.js");
 const CommandHandler = require('./CommandHandler');
+const ButtonHandler = require('./ButtonHandler');
 
 class CommandClient extends Client {
     constructor(options) {
@@ -10,8 +11,13 @@ class CommandClient extends Client {
     }
 
     async registerCommandsIn(options) {
-        this.handler = new CommandHandler(this);
-        return this.handler.registerCommandsIn(options);
+        this.commandHandler = new CommandHandler(this);
+        return this.commandHandler.registerCommandsIn(options);
+    }
+
+    async registerButtonsIn(options) {
+        this.buttonHandler = new ButtonHandler(this);
+        return this.buttonHandler.registerButtonsIn(options);
     }
 
     validateInfo(options) {

@@ -1,14 +1,16 @@
+const BaseHandler = require('./BaseHandler');
 const { ApplicationCommand } = require('discord.js');
 const InteractionCall = require('./InteractionCall');
 const p = require('phin');
 
-class CommandHandler {
+class CommandHandler extends BaseHandler {
     constructor(client) {
-		if(!client.application) throw new Error("Client application is necessary");
-        Object.defineProperty(this, 'client', { value: client });
-
-		this.commands = [];
+		super(client);
     }
+
+	recognize(interaction) {
+		return this.commands.find(c => c.name == interaction.commandName);
+	}
 
     async registerCommandsIn(options) {
         const obj = require('require-all')(options);
@@ -61,56 +63,10 @@ class CommandHandler {
 		this.owner = this.client.application.owner;
 		const allCommands = commands.map(command => new command(this.client));
 		this.commands = allCommands.map(cmd => cmd.name == 'help' ? new cmd.constructor(cmd.client, allCommands) : cmd);
+		this.client.on('interactionCreate', interaction => {
+			if(interaction.isCommand()) return this.onInteraction(interaction);
+		});
 		return this.commands;
-	}
-
-	async onCommand(interaction) {
-		const command = this.commands.find(c => c.name == interaction.commandName);
-		if(!command) return;//throw new Error(`Unknown command '${commandName}' was triggered`);
-		
-		const noPerms = command.hasPermission(interaction);
-		if(typeof noPerms === 'string') {
-			const data = { response: typeof hasPermission === 'string' ? hasPermission : undefined };
-			return command.onBlock(interaction, 'permission', data);
-		}
-
-		if(!interaction.channel) {
-			await interaction.channel.fetch();
-		}
-
-		if(command.clientPermissions) {
-			const missing = interaction.channel.permissionsFor(interaction.client.user).missing(command.clientPermissions, false);
-			if(missing.length > 0) {
-				const data = { missing };
-				return command.onBlock(interaction, 'clientPermissions', data);
-			}
-		}
-
-		const throttle = command.throttle(interaction.user);
-		if(throttle && throttle.usages + 1 > command.throttling.usages) {
-			const remaining = (throttle.start + (command.throttling.duration * 1000) - Date.now()) / 1000;
-			const data = { throttle, remaining };
-			return command.onBlock(interaction, 'throttling', data);
-		}
-
-		if(throttle) throttle.usages++;
-
-		let args;
-		if(command.options?.length > 0) {
-			try {
-				args = CommandHandler.parseArgs(interaction, command);
-			} catch(err) {
-				return command.onBlock(interaction, 'invalidArg', {
-					message: `${err}`
-				});
-			}
-		}
-
-		try {
-			await command.run(interaction, args);
-		} catch(err) {
-			return command.onError(err, interaction);
-		}
 	}
 
 	static parseArgs(interaction) {
