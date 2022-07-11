@@ -20,11 +20,13 @@ class Button extends MessageButton {
     //this.options.filter(o => o.required).map(o => o.name);
     //Object.keys(args)
     generate(args) {
-        const argNames = Object.entries(args).filter(e => e[1] !== undefined && e[1] !== null).map(e => e[0]);
-        const reqArgNames = this.options.filter(o => o.required).map(o => o.name);
-        if(!reqArgNames.every(a => argNames.includes(a))) {
-            const diff = reqArgNames.filter(a => !argNames.includes(a));
-            return `Missing required arguments: ${diff.join(', ')}`;
+        if(this.options?.length > 0) {
+            const argNames = Object.entries(args).filter(e => e[1] !== undefined && e[1] !== null).map(e => e[0]);
+            const reqArgNames = this.options.filter(o => o.required).map(o => o.name);
+            if(!reqArgNames.every(a => argNames.includes(a))) {
+                const diff = reqArgNames.filter(a => !argNames.includes(a));
+                return `Missing required arguments: ${diff.join(', ')}`;
+            }
         }
         const customId = ButtonHandler.generateCustomId(this, args);
         let button = new MessageButton()

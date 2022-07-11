@@ -14,7 +14,7 @@ class ButtonHandler extends BaseHandler {
 		const buttons = [];
 		for(const group of Object.values(obj)) {
 			for(const button of Object.values(group)) {
-				if(buttons.map(b => b.prefix).includes(button.prefix)) throw new Error(`Button with prefix '${button.prefix}' is already registered`);
+				if(buttons.map(b => b.name).includes(button.name)) throw new Error(`Button with name '${button.prefix}' is already registered`);
 				buttons.push(button);
 			}
 		}
@@ -62,8 +62,10 @@ class ButtonHandler extends BaseHandler {
 
     static generateCustomId(button, args) {
         let customIdObj = {};
-        for(const option of button.options) {
-            customIdObj[option.name] = args[option.name] ?? null;
+        if(button.options?.length > 0) {
+            for(const option of button.options) {
+                customIdObj[option.name] = args[option.name] ?? null;
+            }
         }
         return [button.prefix, ...Object.values(customIdObj)].join('-');
     }
