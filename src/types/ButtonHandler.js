@@ -1,4 +1,6 @@
+const { ApplicationCommandOptionType } = require('discord.js');
 const BaseHandler = require('./BaseHandler');
+
 
 class ButtonHandler extends BaseHandler {
     constructor(client) {
@@ -45,10 +47,10 @@ class ButtonHandler extends BaseHandler {
             const { name, type } = button.options[i];
             let arg = {};
             switch(type) {
-                case 'NUMBER':
+                case ApplicationCommandOptionType.Number:
                     arg[name] = Number(values[i])
                 break;
-                case 'BOOLEAN':
+                case ApplicationCommandOptionType.Boolean:
                     arg[name] = values[i] == 'true';
                 break;
                 default:

@@ -1,8 +1,8 @@
-const { MessageButton } = require('discord.js');
+const { ButtonBuilder, PermissionFlagsBits } = require('discord.js');
 const ButtonHandler = require('./ButtonHandler');
 const { permissions } = require('../util');
 
-class Button extends MessageButton {
+class Button extends ButtonBuilder {
     constructor(client, data) {
         super(data);
         this.validateInfo(client, data);
@@ -29,15 +29,16 @@ class Button extends MessageButton {
             }
         }
         const customId = ButtonHandler.generateCustomId(this, args);
-        let button = new MessageButton()
-            .setEmoji(this.emoji)
-            .setLabel(this.label);
-        button = this.url 
-            ? button.setURL(this.url) 
+        let button = new ButtonBuilder()
+            .setLabel(this.data.label);
+
+        if(this.data.emoji) button.setEmoji(this.data.emoji);
+        button = this.data.url 
+            ? button.setURL(this.data.url) 
             : button
-                .setDisabled(this.disabled)
+                .setDisabled(Boolean(this.data.disabled))
                 .setCustomId(customId)
-                .setStyle(this.style)
+                .setStyle(this.data.style)
         return button;
     }
 
@@ -161,7 +162,7 @@ class Button extends MessageButton {
 			case 'clientPermissions': {
 				if(data.missing.length === 1) {
                     const reply = {
-                        content: `I need the "${permissions[data.missing[0]]}" permission for the \`${this.name}\` command to work.`,
+                        content: `I need the "${permissions[PermissionFlagsBits[data.missing[0]]]}" permission for the \`${this.name}\` command to work.`,
                         ephemeral: true
                     };
                     return interaction.reply(reply);
@@ -169,7 +170,7 @@ class Button extends MessageButton {
                 const reply = {
                     content: oneLine`
 					I need the following permissions for the \`${this.name}\` command to work:
-					${data.missing.map(perm => permissions[perm]).join(', ')}`,
+					${data.missing.map(perm => permissions[PermissionFlagsBits[perm]]).join(', ')}`,
                     ephemeral: true
                 };
 				return interaction.reply(reply)

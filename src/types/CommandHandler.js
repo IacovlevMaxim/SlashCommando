@@ -1,7 +1,5 @@
 const BaseHandler = require('./BaseHandler');
 const { ApplicationCommand } = require('discord.js');
-const InteractionCall = require('./InteractionCall');
-const p = require('phin');
 
 class CommandHandler extends BaseHandler {
     constructor(client) {

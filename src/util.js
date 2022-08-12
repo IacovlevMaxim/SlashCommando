@@ -1,43 +1,15 @@
-const permissions = {
-	ADMINISTRATOR: 'Administrator',
-	VIEW_AUDIT_LOG: 'View audit log',
-	MANAGE_GUILD: 'Manage server',
-	MANAGE_ROLES: 'Manage roles',
-	MANAGE_CHANNELS: 'Manage channels',
-	KICK_MEMBERS: 'Kick members',
-	BAN_MEMBERS: 'Ban members',
-	CREATE_INSTANT_INVITE: 'Create instant invite',
-	CHANGE_NICKNAME: 'Change nickname',
-	MANAGE_NICKNAMES: 'Manage nicknames',
-	MANAGE_EMOJIS: 'Manage emojis',
-	MANAGE_WEBHOOKS: 'Manage webhooks',
-	VIEW_CHANNEL: 'View channels',
-	SEND_MESSAGES: 'Send messages',
-	SEND_TTS_MESSAGES: 'Send TTS messages',
-	MANAGE_MESSAGES: 'Manage messages',
-	EMBED_LINKS: 'Embed links',
-	ATTACH_FILES: 'Attach files',
-	READ_MESSAGE_HISTORY: 'Read message history',
-	MENTION_EVERYONE: 'Mention everyone',
-	USE_EXTERNAL_EMOJIS: 'Use external emojis',
-	ADD_REACTIONS: 'Add reactions',
-	CONNECT: 'Connect',
-	SPEAK: 'Speak',
-	MUTE_MEMBERS: 'Mute members',
-	DEAFEN_MEMBERS: 'Deafen members',
-	MOVE_MEMBERS: 'Move members',
-	USE_VAD: 'Use voice activity',
-	PRIORITY_SPEAKER: 'Priority speaker',
-	VIEW_GUILD_INSIGHTS: 'View server insights',
-	STREAM: 'Video',
-	MANAGE_EMOJIS_AND_STICKERS: 'Manage emojis and stickers',
-	USE_APPLICATION_COMMANDS: 'Use application commands',
-	REQUEST_TO_SPEAK: 'Request to speak',
-	MANAGE_THREADS: 'Manage threads',
-	USE_PUBLIC_THREADS: 'Use public threads',
-	USE_PRIVATE_THREADS: 'Use private threads',
-	USE_EXTERNAL_STICKERS: 'Use external stickers'
-};
+const { PermissionFlagsBits } = require('discord.js');
+const permissions = {}
+
+for(const [ name, int ] of Object.entries(PermissionFlagsBits)) {
+	const splitName = name.trim()
+		.split(/(?=[A-Z])/)
+		.map(n => n.trim())
+		.join(' ');
+	let obj = {};
+	obj[int] = splitName
+	Object.assign(permissions, obj);
+}
 
 module.exports = {
     permissions

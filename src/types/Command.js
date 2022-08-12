@@ -1,4 +1,4 @@
-const { Constants } = require('discord.js');
+const { ApplicationCommandOptionType, PermissionFlagsBits } = require('discord.js');
 const { permissions } = require('../util');
 const { stripIndent, oneLine } = require('common-tags');
 
@@ -72,9 +72,10 @@ class Command {
                 });
 			}
 			case 'clientPermissions': {
+                console.log(data.missing)
 				if(data.missing.length === 1) {
                     const reply = {
-                        content: `I need the "${permissions[data.missing[0]]}" permission for the \`${this.name}\` command to work.`,
+                        content: `I need the "${permissions[PermissionFlagsBits[data.missing[0]]]}" permission for the \`${this.name}\` command to work.`,
                         ephemeral: true
                     };
                     return interaction.reply(reply);
@@ -82,7 +83,7 @@ class Command {
                 const reply = {
                     content: oneLine`
 					I need the following permissions for the \`${this.name}\` command to work:
-					${data.missing.map(perm => permissions[perm]).join(', ')}`,
+					${data.missing.map(perm => permissions[PermissionFlagsBits[perm]]).join(', ')}`,
                     ephemeral: true
                 };
 				return interaction.reply(reply)
@@ -119,13 +120,13 @@ class Command {
     }
 
     static transformOption(option, received) {
-        const stringType = typeof option.type === 'string' ? option.type : Constants.ApplicationCommandOptionTypes[option.type];
+        const stringType = typeof option.type === 'string' ? option.type : ApplicationCommandOptionType[option.type];
         return {
-          type: typeof option.type === 'number' ? option.type : Constants.ApplicationCommandOptionTypes[option.type],
+          type: typeof option.type === 'number' ? option.type : ApplicationCommandOptionType[option.type],
           name: option.name,
           description: option.description,
           required:
-            option.required ?? (stringType === 'SUB_COMMAND' || stringType === 'SUB_COMMAND_GROUP' ? undefined : false),
+            option.required ?? (stringType === ApplicationCommandOptionType.Subcommand || stringType === ApplicationCommandOptionType.SubcommandGroup ? undefined : false),
           choices: option.choices,
           options: option.options?.map(o => this.transformOption(o, received)),
         };
@@ -180,7 +181,7 @@ class Command {
     }
 
     validateSubcommand(data) {
-        if(!Constants.ApplicationCommandOptionTypes[data.type]) throw new TypeError(`Subcommand type '${data.type}' is invalid`);
+        if(!ApplicationCommandOptionType[data.type]) throw new TypeError(`Subcommand type '${data.type}' is invalid`);
         if(data.name !== data.name.toLowerCase()) throw new RangeError('Subcommand name must be lower case');
         if(!/^[\w-]{1,32}$/.test(data.name)) throw new Error(`Subcommand name '${data.name}' does not match the regex /^[\w-]{1,32}$/`);
         if(typeof data.description !== 'string') throw new TypeError('Subcommand description must be a string.');
@@ -195,7 +196,7 @@ class Command {
         } 
         if(data.options) {
             if(!Array.isArray(data.options)) throw new TypeError('Subcommand options must be an array');
-            if(data.type !== 'SUB_COMMAND' && data.type !== '1') throw new Error('Subcommand cannot have the "options" property')
+            if(data.type !== ApplicationCommandOptionType.Subcommand && data.type !== '1') throw new Error('Subcommand cannot have the "options" property')
             if(data.options.length > 25) throw new RangeError('Options length must be 25 or less');
             for(const option of data.options) {
                 this.validateSubcommand(option)
