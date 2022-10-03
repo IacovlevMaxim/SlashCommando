@@ -1,5 +1,5 @@
 const BaseHandler = require('./BaseHandler');
-const { ApplicationCommand } = require('discord.js');
+const { ApplicationCommand, ApplicationCommandOptionType } = require('discord.js');
 
 class CommandHandler extends BaseHandler {
     constructor(client) {
@@ -61,16 +61,38 @@ class CommandHandler extends BaseHandler {
 		this.owner = this.client.application.owner;
 		const allCommands = commands.map(command => new command(this.client));
 		this.commands = allCommands.map(cmd => cmd.name == 'help' ? new cmd.constructor(cmd.client, allCommands) : cmd);
+		console.log(this.commands);
 		this.client.on('interactionCreate', interaction => {
 			if(interaction.isCommand()) return this.onInteraction(interaction);
 		});
 		return this.commands;
 	}
 
-	static parseArgs(interaction) {
+	static parseArgs(interaction, command) {
+		// console.log(this);
+		// const command = this.commands.find(cmd => cmd.name === interaction.commandName);
+		// console.log(command);
+		if(!command) return [];
+
 		const args = Object.assign({}, ...interaction.options?._hoistedOptions.map(o => {
 			let res = {};
-			res[o.name] = o.value;
+			const option = command.options.find(opt => opt.name === o.name);
+			switch(option?.type) {
+				case ApplicationCommandOptionType.Number:
+					res[o.name] = Number(o.value);
+				break;
+
+				case ApplicationCommandOptionType.Integer:
+					res[o.name] = parseInt(o.value);
+				break;
+
+				case ApplicationCommandOptionType.Boolean:
+					res[o.name] = Boolean(o.value);
+				break;
+
+				default: 
+					res[o.name] = o.value
+			}
 			return res;
 		}));
 		return args;

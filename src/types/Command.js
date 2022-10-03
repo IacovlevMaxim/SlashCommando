@@ -1,6 +1,7 @@
-const { ApplicationCommandOptionType, PermissionFlagsBits } = require('discord.js');
+const { ApplicationCommandOptionType, PermissionFlagsBits, ChannelType } = require('discord.js');
 const { permissions } = require('../util');
 const { stripIndent, oneLine } = require('common-tags');
+const valLimit = 2 ** 16;
 
 class Command {
     constructor(client, data) {
@@ -129,6 +130,11 @@ class Command {
             option.required ?? (stringType === ApplicationCommandOptionType.Subcommand || stringType === ApplicationCommandOptionType.SubcommandGroup ? undefined : false),
           choices: option.choices,
           options: option.options?.map(o => this.transformOption(o, received)),
+          channel_types: option.channelTypes,
+          min_value: option.minValue,
+          max_value: option.maxValue,
+          min_length: option.minLength,
+          max_length: option.maxLength
         };
     }
 
@@ -201,6 +207,34 @@ class Command {
             for(const option of data.options) {
                 this.validateSubcommand(option)
             }
+        }
+        if(data.channelTypes) {
+            if(!Array.isArray(data.channelTypes)) throw new TypeError("Command.channelTypes must be an array");
+            for(const type of data.channelTypes) {
+                if(!ChannelType[type]) throw new RangeError(`Channel type ${type} is not a valid Channel type`);
+            }
+        }
+        if('minValue' in data) {
+            if(data.type === ApplicationCommandOptionType.Number && typeof data.minValue !== 'number') throw new TypeError("Command option minValue must be a Number");
+            if(data.type === ApplicationCommandOptionType.Integer && !Number.isInteger(data.minValue)) throw new TypeError("Command option minValue must be an Integer");
+            if(data.minValue < -valLimit) throw new RangeError(`Command option minValue should be greater than ${-valLimit}`); 
+        }
+        if('maxValue' in data) {
+            if(data.type === ApplicationCommandOptionType.Number && typeof data.maxValue !== 'number') throw new TypeError("Command option maxValue must be a Number");
+            if(data.type === ApplicationCommandOptionType.Integer && !Number.isInteger(data.maxValue)) throw new TypeError("Command option maxValue must be an Integer");
+            if(data.maxValue > valLimit) throw new RangeError(`Command option maxValue should be less than ${valLimit}`);
+        }
+        if('minLength' in data) {
+            if(data.type !== ApplicationCommandOptionType.String) throw new Error("Command option minLength only allowed for option type String");
+            if(!Number.isInteger(data.minLength)) throw new TypeError("Command option minLength must be an integer");
+            if(data.minLength < 0) throw new RangeError("Command option minLength must be greater than or equal to 0");
+            if(data.minLength > 6000) throw new RangeError("Command option minLength must be lesss than or equal to 6000");
+        }
+        if('maxLength' in data) {
+            if(data.type !== ApplicationCommandOptionType.String) throw new Error("Command option maxLength only allowed for option type String");
+            if(!Number.isInteger(data.maxLength)) throw new TypeError("Command option maxLength must be an integer");
+            if(data.maxLength < 1) throw new RangeError("Command option maxLength must be greater than or equal to 1");
+            if(data.maxLength > 6000) throw new RangeError("Command option maxLength must be lesss than or equal to 6000");
         }
     }
 
