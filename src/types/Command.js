@@ -18,8 +18,8 @@ class Command {
         this._throttles = new Map();
     }
 
-    execute(interaction, args) {
-        throw new Error(`Command '${this.name}' has no 'execute()' method`);
+    run(interaction, args) {
+        throw new Error(`Command '${this.name}' has no 'run()' method`);
     }
 
     throttle(userID) {

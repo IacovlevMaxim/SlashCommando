@@ -85,8 +85,8 @@ class Button extends ButtonBuilder {
         if(!reqs.sort().reverse().every((o, i) => o === reqs[i])) throw new Error("Required options must come first");
     }
 
-    execute(interaction, args) {
-        throw new Error("Button must have a 'execute' method");
+    run(interaction, args) {
+        throw new Error(`Button '${this.name}' must have a 'run()' method`);
     }
 
     /**

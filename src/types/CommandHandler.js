@@ -4,6 +4,7 @@ const { ApplicationCommand, ApplicationCommandOptionType } = require('discord.js
 class CommandHandler extends BaseHandler {
     constructor(client) {
 		super(client);
+		this.onInteraction = this.onInteraction.bind(this);
     }
 
 	recognize(interaction) {
@@ -26,52 +27,21 @@ class CommandHandler extends BaseHandler {
 		if(!this.client.application.owner) await this.client.application.fetch();
 		await this.client.application.commands.fetch();
 
-		let registeredCommands;
-		const options = this.client.commandoOptions;
-		const data = commands.map(command => {
-			return options?.testing 
-				? {...CommandHandler.transformCommand(command), description: `(testing) ${command.description}`}
-				: CommandHandler.transformCommand(command)
-		});
-		registeredCommands = await this.client.application.commands.set(data, options?.testing ? options?.testingGuild : null);
-
-		for(const ownerCommand of commands.filter(command => command.ownerOnly)) {
-			const registeredCommand = registeredCommands.find(command => command.name === ownerCommand.name);
-			await Promise.all([
-				registeredCommand.edit({
-					defaultPermission: false
-				}),
-				this.client.guilds.cache.get(options?.testingGuild)?.commands.permissions.add({
-					command: registeredCommand.id,
-					permissions: [
-						{
-							id: this.client.application.owner.id,
-							type: 'USER',
-							permission: true
-						}
-					],
-					
-				})
-			]);
-		}
-		return commands;
+		const data = commands.map(command => CommandHandler.transformCommand(command));
+		return data;
 	}
 
 	init(commands) {
 		this.owner = this.client.application.owner;
 		const allCommands = commands.map(command => new command(this.client));
 		this.commands = allCommands.map(cmd => cmd.name == 'help' ? new cmd.constructor(cmd.client, allCommands) : cmd);
-		console.log(this.commands);
 		this.client.on('interactionCreate', interaction => {
-			if(interaction.isCommand()) return this.onInteraction(interaction);
+			if(interaction.isCommand() && !interaction.targetId) return this.onInteraction(interaction);
 		});
 		return this.commands;
 	}
 
 	static parseArgs(interaction, command) {
-		// console.log(this);
-		// const command = this.commands.find(cmd => cmd.name === interaction.commandName);
-		// console.log(command);
 		if(!command) return [];
 
 		const args = Object.assign({}, ...interaction.options?._hoistedOptions.map(o => {

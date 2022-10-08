@@ -1,6 +1,7 @@
 const { Client } = require("discord.js");
 const CommandHandler = require('./CommandHandler');
 const ButtonHandler = require('./ButtonHandler');
+const ContextMenuHandler = require('./ContextMenuHandler');
 
 class CommandClient extends Client {
     constructor(options) {
@@ -13,6 +14,11 @@ class CommandClient extends Client {
     async registerCommandsIn(options) {
         this.commandHandler = new CommandHandler(this);
         return this.commandHandler.registerCommandsIn(options);
+    }
+
+    async registerContextMenusIn(options) {
+        this.contextMenusHandler = new ContextMenuHandler(this);
+        return this.contextMenusHandler.registerContextMenusIn(options);
     }
 
     async registerButtonsIn(options) {
