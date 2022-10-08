@@ -1,5 +1,4 @@
 const BaseHandler = require('./BaseHandler');
-const { ApplicationCommand, MessageContextMenuCommandInteraction } = require('discord.js');
 
 class ContextMenuHandler extends BaseHandler {
     constructor(client) {
@@ -45,11 +44,11 @@ class ContextMenuHandler extends BaseHandler {
 	static transformContextMenu(contextMenu) {
 		return {
 		  name: contextMenu.name,
-		  dm_permission: contextMenu.dmPermission,
-          default_member_permissions: contextMenu.defaultMemberPermissions,
+		  dm_permission: contextMenu.dm_permission,
+          default_member_permissions: contextMenu.default_member_permissions,
           type: contextMenu.type
 		};
-	  }
+	}
 }
 
 module.exports = ContextMenuHandler;
