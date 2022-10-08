@@ -5,5 +5,7 @@ module.exports = {
     Client: require('./types/Client'),
     Command: require('./types/Command'),
     CommandHandler: require('./types/CommandHandler'),
+    ContextMenu: require('./types/ContextMenu'),
+    ContextMenuHandler: require('./types/ContextMenuHandler'),
     permissions: require('./util').permissions
 }
