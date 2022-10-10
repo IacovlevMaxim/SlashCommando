@@ -1,16 +1,18 @@
-const { ApplicationCommandOptionType, PermissionFlagsBits, ChannelType } = require('discord.js');
+const { SlashCommandBuilder, ApplicationCommandOptionType, PermissionFlagsBits, ChannelType } = require('discord.js');
 const { permissions } = require('../util');
 const { stripIndent, oneLine } = require('common-tags');
 const valLimit = 2 ** 16;
 
-class Command {
+class Command extends SlashCommandBuilder {
     constructor(client, data) {
+        super();
         this.validateInfo(client, data);
         Object.defineProperty(this, 'client', { value: client });
-        this.name = data.name;
-        this.description = data.description;
+        this.setName(data.name)
+            .setDescription(data.description)
+            .setDMPermission(data.dm_permission)
+            .setDefaultMemberPermissions(data.default_member_permissions);
         this.options = data.options ?? null;
-        this.defaultPermission = data.defaultPermission ?? null;
         this.ownerOnly = Boolean(data.ownerOnly);
         this.clientPermissions = data.clientPermissions ?? null;
         this.userPermissions = data.userPermissions ?? null;
@@ -168,13 +170,13 @@ class Command {
     }
 
     validateCommand(data) {
-        if(typeof data.name !== 'string') throw new TypeError('Command name must be a string.');
-        if(data.name !== data.name.toLowerCase()) throw new RangeError('Command name must be lower case');
-        if(!/^[\w-]{1,32}$/.test(data.name)) throw new RangeError(`Command name '${data.name}' does not match the regex /^[\w-]{1,32}$/`);
+        // if(typeof data.name !== 'string') throw new TypeError('Command name must be a string.');
+        // if(data.name !== data.name.toLowerCase()) throw new RangeError('Command name must be lower case');
+        // if(!/^[\w-]{1,32}$/.test(data.name)) throw new RangeError(`Command name '${data.name}' does not match the regex /^[\w-]{1,32}$/`);
 
-        if(typeof data.description !== 'string') throw new TypeError('Command description must be a string.');
-        if(data.description.length < 1) throw new RangeError('Command description length must be greater than 0');
-        if(data.description.length > 100) throw new RangeError('Command description length must be less than or equal to 100')
+        // if(typeof data.description !== 'string') throw new TypeError('Command description must be a string.');
+        // if(data.description.length < 1) throw new RangeError('Command description length must be greater than 0');
+        // if(data.description.length > 100) throw new RangeError('Command description length must be less than or equal to 100')
 
         if('defaultPermission' in data && typeof data.defaultPermission !== 'boolean') throw new TypeError('Command default permission must be a boolean');
         if(data.options) {

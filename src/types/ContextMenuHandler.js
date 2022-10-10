@@ -42,12 +42,7 @@ class ContextMenuHandler extends BaseHandler {
 
 
 	static transformContextMenu(contextMenu) {
-		return {
-		  name: contextMenu.name,
-		  dm_permission: contextMenu.dm_permission,
-          default_member_permissions: contextMenu.default_member_permissions,
-          type: contextMenu.type
-		};
+		return {...contextMenu};
 	}
 }
 

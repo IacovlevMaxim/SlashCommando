@@ -69,12 +69,7 @@ class CommandHandler extends BaseHandler {
 	}
 
 	static transformCommand(command) {
-		return {
-		  name: command.name,
-		  description: command.description,
-		  options: command.options?.map(o => ApplicationCommand.transformOption(o)),
-		  default_permission: command.defaultPermission,
-		};
+		return {...command};
 	  }
 }
 
