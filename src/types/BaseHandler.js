@@ -26,11 +26,9 @@ class BaseHandler {
 			return component.onBlock(interaction, 'permission', data);
 		}
 
-		if(!interaction.channel) {
-			await interaction.channel.fetch();
-		}
+		if(interaction.guildId && component.clientPermissions) {
+			if(!interaction.channel) await interaction.channel.fetch();
 
-		if(component.clientPermissions) {
 			const missing = interaction.channel.permissionsFor(interaction.client.user).missing(component.clientPermissions, false);
 			if(missing.length > 0) {
 				const data = { missing };
