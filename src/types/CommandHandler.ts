@@ -76,7 +76,7 @@ class CommandHandler extends BaseHandler<Command, CommandInteraction> {
 	}
 
 	static transformCommand(command: Command) {
-		return {...command};
+		return {...command, options: command._options};
 	  }
 }
 

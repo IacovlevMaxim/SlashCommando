@@ -7,6 +7,7 @@ declare class CommandHandler extends BaseHandler<Command, CommandInteraction> {
     constructor(client: CommandClient);
     recognize(interaction: CommandInteraction): Command | undefined;
     registerCommandsIn(options: string): Promise<{
+        options: import("discord.js").ApplicationCommandOption[] | undefined;
         ownerOnly?: boolean | undefined;
         clientPermissions?: bigint[] | undefined;
         userPermissions?: bigint[] | undefined;
@@ -17,12 +18,12 @@ declare class CommandHandler extends BaseHandler<Command, CommandInteraction> {
         name_localizations?: Partial<Record<"en-US" | "en-GB" | "bg" | "zh-CN" | "zh-TW" | "hr" | "cs" | "da" | "nl" | "fi" | "fr" | "de" | "el" | "hi" | "hu" | "it" | "ja" | "ko" | "lt" | "no" | "pl" | "pt-BR" | "ro" | "ru" | "es-ES" | "sv-SE" | "th" | "tr" | "uk" | "vi", string | null>> | undefined;
         description: string;
         description_localizations?: Partial<Record<"en-US" | "en-GB" | "bg" | "zh-CN" | "zh-TW" | "hr" | "cs" | "da" | "nl" | "fi" | "fr" | "de" | "el" | "hi" | "hu" | "it" | "ja" | "ko" | "lt" | "no" | "pl" | "pt-BR" | "ro" | "ru" | "es-ES" | "sv-SE" | "th" | "tr" | "uk" | "vi", string | null>> | undefined;
-        options: import("discord.js").ToAPIApplicationCommandOptions[];
         default_permission: boolean | undefined;
         default_member_permissions: string | null | undefined;
         dm_permission: boolean | undefined;
     }[]>;
     registerCommands(commands: Command[]): Promise<{
+        options: import("discord.js").ApplicationCommandOption[] | undefined;
         ownerOnly?: boolean | undefined;
         clientPermissions?: bigint[] | undefined;
         userPermissions?: bigint[] | undefined;
@@ -33,7 +34,6 @@ declare class CommandHandler extends BaseHandler<Command, CommandInteraction> {
         name_localizations?: Partial<Record<"en-US" | "en-GB" | "bg" | "zh-CN" | "zh-TW" | "hr" | "cs" | "da" | "nl" | "fi" | "fr" | "de" | "el" | "hi" | "hu" | "it" | "ja" | "ko" | "lt" | "no" | "pl" | "pt-BR" | "ro" | "ru" | "es-ES" | "sv-SE" | "th" | "tr" | "uk" | "vi", string | null>> | undefined;
         description: string;
         description_localizations?: Partial<Record<"en-US" | "en-GB" | "bg" | "zh-CN" | "zh-TW" | "hr" | "cs" | "da" | "nl" | "fi" | "fr" | "de" | "el" | "hi" | "hu" | "it" | "ja" | "ko" | "lt" | "no" | "pl" | "pt-BR" | "ro" | "ru" | "es-ES" | "sv-SE" | "th" | "tr" | "uk" | "vi", string | null>> | undefined;
-        options: import("discord.js").ToAPIApplicationCommandOptions[];
         default_permission: boolean | undefined;
         default_member_permissions: string | null | undefined;
         dm_permission: boolean | undefined;
@@ -41,6 +41,7 @@ declare class CommandHandler extends BaseHandler<Command, CommandInteraction> {
     init(commands: any[]): Command[];
     parseArgs(interaction: CommandInteraction, command: Command): any;
     static transformCommand(command: Command): {
+        options: import("discord.js").ApplicationCommandOption[] | undefined;
         ownerOnly?: boolean | undefined;
         clientPermissions?: bigint[] | undefined;
         userPermissions?: bigint[] | undefined;
@@ -51,7 +52,6 @@ declare class CommandHandler extends BaseHandler<Command, CommandInteraction> {
         name_localizations?: Partial<Record<"en-US" | "en-GB" | "bg" | "zh-CN" | "zh-TW" | "hr" | "cs" | "da" | "nl" | "fi" | "fr" | "de" | "el" | "hi" | "hu" | "it" | "ja" | "ko" | "lt" | "no" | "pl" | "pt-BR" | "ro" | "ru" | "es-ES" | "sv-SE" | "th" | "tr" | "uk" | "vi", string | null>> | undefined;
         description: string;
         description_localizations?: Partial<Record<"en-US" | "en-GB" | "bg" | "zh-CN" | "zh-TW" | "hr" | "cs" | "da" | "nl" | "fi" | "fr" | "de" | "el" | "hi" | "hu" | "it" | "ja" | "ko" | "lt" | "no" | "pl" | "pt-BR" | "ro" | "ru" | "es-ES" | "sv-SE" | "th" | "tr" | "uk" | "vi", string | null>> | undefined;
-        options: import("discord.js").ToAPIApplicationCommandOptions[];
         default_permission: boolean | undefined;
         default_member_permissions: string | null | undefined;
         dm_permission: boolean | undefined;

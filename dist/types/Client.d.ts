@@ -10,6 +10,7 @@ declare class CommandClient extends Client {
     commandoOptions: unknown;
     constructor(options: any);
     registerCommandsIn(options: string): Promise<{
+        options: import("discord.js").ApplicationCommandOption[] | undefined;
         ownerOnly?: boolean | undefined;
         clientPermissions?: bigint[] | undefined;
         userPermissions?: bigint[] | undefined;
@@ -20,7 +21,6 @@ declare class CommandClient extends Client {
         name_localizations?: Partial<Record<"en-US" | "en-GB" | "bg" | "zh-CN" | "zh-TW" | "hr" | "cs" | "da" | "nl" | "fi" | "fr" | "de" | "el" | "hi" | "hu" | "it" | "ja" | "ko" | "lt" | "no" | "pl" | "pt-BR" | "ro" | "ru" | "es-ES" | "sv-SE" | "th" | "tr" | "uk" | "vi", string | null>> | undefined;
         description: string;
         description_localizations?: Partial<Record<"en-US" | "en-GB" | "bg" | "zh-CN" | "zh-TW" | "hr" | "cs" | "da" | "nl" | "fi" | "fr" | "de" | "el" | "hi" | "hu" | "it" | "ja" | "ko" | "lt" | "no" | "pl" | "pt-BR" | "ro" | "ru" | "es-ES" | "sv-SE" | "th" | "tr" | "uk" | "vi", string | null>> | undefined;
-        options: import("discord.js").ToAPIApplicationCommandOptions[];
         default_permission: boolean | undefined;
         default_member_permissions: string | null | undefined;
         dm_permission: boolean | undefined;

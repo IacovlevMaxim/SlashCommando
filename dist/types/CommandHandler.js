@@ -72,7 +72,7 @@ class CommandHandler extends BaseHandler_1.default {
         return args;
     }
     static transformCommand(command) {
-        return { ...command };
+        return { ...command, options: command._options };
     }
 }
 exports.default = CommandHandler;
