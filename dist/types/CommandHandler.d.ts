@@ -1,0 +1,60 @@
+import { CommandInteraction } from 'discord.js';
+import BaseHandler from './BaseHandler';
+import CommandClient from './Client';
+import Command from './Command';
+declare class CommandHandler extends BaseHandler<Command, CommandInteraction> {
+    commands: Command[];
+    constructor(client: CommandClient);
+    recognize(interaction: CommandInteraction): Command | undefined;
+    registerCommandsIn(options: string): Promise<{
+        ownerOnly?: boolean | undefined;
+        clientPermissions?: bigint[] | undefined;
+        userPermissions?: bigint[] | undefined;
+        throttling?: import("./BaseCommandThrottle.type").default | undefined;
+        _options?: import("discord.js").ApplicationCommandOption[] | undefined;
+        client: CommandClient;
+        name: string;
+        name_localizations?: Partial<Record<"en-US" | "en-GB" | "bg" | "zh-CN" | "zh-TW" | "hr" | "cs" | "da" | "nl" | "fi" | "fr" | "de" | "el" | "hi" | "hu" | "it" | "ja" | "ko" | "lt" | "no" | "pl" | "pt-BR" | "ro" | "ru" | "es-ES" | "sv-SE" | "th" | "tr" | "uk" | "vi", string | null>> | undefined;
+        description: string;
+        description_localizations?: Partial<Record<"en-US" | "en-GB" | "bg" | "zh-CN" | "zh-TW" | "hr" | "cs" | "da" | "nl" | "fi" | "fr" | "de" | "el" | "hi" | "hu" | "it" | "ja" | "ko" | "lt" | "no" | "pl" | "pt-BR" | "ro" | "ru" | "es-ES" | "sv-SE" | "th" | "tr" | "uk" | "vi", string | null>> | undefined;
+        options: import("discord.js").ToAPIApplicationCommandOptions[];
+        default_permission: boolean | undefined;
+        default_member_permissions: string | null | undefined;
+        dm_permission: boolean | undefined;
+    }[]>;
+    registerCommands(commands: Command[]): Promise<{
+        ownerOnly?: boolean | undefined;
+        clientPermissions?: bigint[] | undefined;
+        userPermissions?: bigint[] | undefined;
+        throttling?: import("./BaseCommandThrottle.type").default | undefined;
+        _options?: import("discord.js").ApplicationCommandOption[] | undefined;
+        client: CommandClient;
+        name: string;
+        name_localizations?: Partial<Record<"en-US" | "en-GB" | "bg" | "zh-CN" | "zh-TW" | "hr" | "cs" | "da" | "nl" | "fi" | "fr" | "de" | "el" | "hi" | "hu" | "it" | "ja" | "ko" | "lt" | "no" | "pl" | "pt-BR" | "ro" | "ru" | "es-ES" | "sv-SE" | "th" | "tr" | "uk" | "vi", string | null>> | undefined;
+        description: string;
+        description_localizations?: Partial<Record<"en-US" | "en-GB" | "bg" | "zh-CN" | "zh-TW" | "hr" | "cs" | "da" | "nl" | "fi" | "fr" | "de" | "el" | "hi" | "hu" | "it" | "ja" | "ko" | "lt" | "no" | "pl" | "pt-BR" | "ro" | "ru" | "es-ES" | "sv-SE" | "th" | "tr" | "uk" | "vi", string | null>> | undefined;
+        options: import("discord.js").ToAPIApplicationCommandOptions[];
+        default_permission: boolean | undefined;
+        default_member_permissions: string | null | undefined;
+        dm_permission: boolean | undefined;
+    }[]>;
+    init(commands: any[]): Command[];
+    parseArgs(interaction: CommandInteraction, command: Command): any;
+    static transformCommand(command: Command): {
+        ownerOnly?: boolean | undefined;
+        clientPermissions?: bigint[] | undefined;
+        userPermissions?: bigint[] | undefined;
+        throttling?: import("./BaseCommandThrottle.type").default | undefined;
+        _options?: import("discord.js").ApplicationCommandOption[] | undefined;
+        client: CommandClient;
+        name: string;
+        name_localizations?: Partial<Record<"en-US" | "en-GB" | "bg" | "zh-CN" | "zh-TW" | "hr" | "cs" | "da" | "nl" | "fi" | "fr" | "de" | "el" | "hi" | "hu" | "it" | "ja" | "ko" | "lt" | "no" | "pl" | "pt-BR" | "ro" | "ru" | "es-ES" | "sv-SE" | "th" | "tr" | "uk" | "vi", string | null>> | undefined;
+        description: string;
+        description_localizations?: Partial<Record<"en-US" | "en-GB" | "bg" | "zh-CN" | "zh-TW" | "hr" | "cs" | "da" | "nl" | "fi" | "fr" | "de" | "el" | "hi" | "hu" | "it" | "ja" | "ko" | "lt" | "no" | "pl" | "pt-BR" | "ro" | "ru" | "es-ES" | "sv-SE" | "th" | "tr" | "uk" | "vi", string | null>> | undefined;
+        options: import("discord.js").ToAPIApplicationCommandOptions[];
+        default_permission: boolean | undefined;
+        default_member_permissions: string | null | undefined;
+        dm_permission: boolean | undefined;
+    };
+}
+export default CommandHandler;

@@ -1,15 +1,27 @@
-const { ButtonBuilder, PermissionFlagsBits } = require('discord.js');
-const ButtonHandler = require('./ButtonHandler');
-const { permissions } = require('../util');
+import { ApplicationCommandOption, BaseGuildTextChannel, ButtonBuilder, ButtonInteraction, GuildMember, PermissionFlagsBits, PermissionsString } from 'discord.js';
+import ButtonHandler from './ButtonHandler';
+import BaseCommand from './BaseCommand';
+import { permissions } from'../util';
+import CommandClient from './Client';
+import { stripIndent, oneLine } from 'common-tags';
+import BaseCommandThrottle from './BaseCommandThrottle.type';
+import CommandThrottle from './CommandThrottle';
+import InteractionArgument from './InteractionsArgument';
 
-class Button extends ButtonBuilder {
-    constructor(client, data) {
+class Button extends ButtonBuilder implements BaseCommand {
+    prefix: string; 
+    ownerOnly?: boolean;
+    _options?: ApplicationCommandOption[];
+    clientPermissions?: bigint[];
+    userPermissions?: bigint[];
+    throttling?: BaseCommandThrottle;
+    private _throttles: Map<string, CommandThrottle>;
+    
+    constructor(public client: CommandClient, data: any) {
         super(data);
         this.validateInfo(client, data);
-        Object.defineProperty(this, 'client', { value: client });
         this.prefix = data.prefix;
-        this.options = data.options;
-        this.defaultPermission = data.defaultPermission ?? null;
+        this._options = data.options;
         this.ownerOnly = Boolean(data.ownerOnly);
         this.clientPermissions = data.clientPermissions ?? null;
         this.userPermissions = data.userPermissions ?? null;
@@ -19,30 +31,31 @@ class Button extends ButtonBuilder {
 
     //this.options.filter(o => o.required).map(o => o.name);
     //Object.keys(args)
-    generate(args) {
-        if(this.options?.length > 0) {
+    generate(args: InteractionArgument[]) {
+        if(this._options && this._options?.length > 0) {
             const argNames = Object.entries(args).filter(e => e[1] !== undefined && e[1] !== null).map(e => e[0]);
-            const reqArgNames = this.options.filter(o => o.required).map(o => o.name);
+            const reqArgNames = this._options.filter(o => ('required' in o && o.required)).map(o => o.name);
             if(!reqArgNames.every(a => argNames.includes(a))) {
                 const diff = reqArgNames.filter(a => !argNames.includes(a));
                 return `Missing required arguments: ${diff.join(', ')}`;
             }
         }
         const customId = ButtonHandler.generateCustomId(this, args);
-        let button = new ButtonBuilder()
-            .setLabel(this.data.label);
-
+        let button = new ButtonBuilder();
+        if(this.data.label) button.setLabel(this.data.label);
         if(this.data.emoji) button.setEmoji(this.data.emoji);
-        button = this.data.url 
-            ? button.setURL(this.data.url) 
-            : button
-                .setDisabled(Boolean(this.data.disabled))
-                .setCustomId(customId)
-                .setStyle(this.data.style)
+        if('url' in this.data && this.data.url) {
+            button.setURL(this.data.url) 
+        } else {
+            button
+            .setDisabled(Boolean(this.data.disabled))
+            .setCustomId(customId);
+            if(this.data.style) button.setStyle(this.data.style);
+        }
         return button;
     }
 
-    validateInfo(client, data) {
+    validateInfo(client: CommandClient, data: any) {
         if(!client) throw new Error("Client must be defined");
         if(!data) throw new Error("Button data must be defined");
         if(typeof data.prefix !== 'string') throw new TypeError("Button prefix must be string");
@@ -74,19 +87,19 @@ class Button extends ButtonBuilder {
         if(data.options) this.validateOptions(data.options);
     }
 
-    validateOptions(data) {
+    validateOptions(data: ApplicationCommandOption[]) {
         if(!Array.isArray(data)) throw new TypeError("Options must be an array");
         if(data.length > 5) throw new RangeError("Options length must be 5 or less");
         for(const option of data) {
             if(typeof option.name !== 'string') throw new TypeError("Option name must be a string");
             if('required' in option && typeof option.required !== 'boolean') throw new TypeError('Option "required" property must be a boolean');
         }
-        const reqs = data.map(o => o.required);
+        const reqs = data.map(o => ('required' in o && o.required));
         if(!reqs.sort().reverse().every((o, i) => o === reqs[i])) throw new Error("Required options must come first");
     }
 
-    run(interaction, args) {
-        throw new Error(`Button '${this.name}' must have a 'run()' method`);
+    run(interaction: ButtonInteraction, args: InteractionArgument[]) {
+        throw new Error(`Button '${this.prefix}' must have a 'run()' method`);
     }
 
     /**
@@ -94,8 +107,7 @@ class Button extends ButtonBuilder {
      * name
      * required
      */
-    onError(err, interaction) {
-        const owner = this.client.application.owner;
+    onError(err: Error, interaction: ButtonInteraction) {
         const response = err.message == 'Cannot read property \'collection\' of undefined' 
                          ? 
                          'Promobot is starting its processes. Please retry in a few minutes'
@@ -103,37 +115,42 @@ class Button extends ButtonBuilder {
                          stripIndent`
             An error occured when running the command: \`${err.name}: ${err.message}\`
             You should not have received this error.
-            Please contact ${owner.username}#${owner.tag} in this server: https://discord.gg/dXES6RYtAq
+            Please contact moderators in this server: https://discord.gg/dXES6RYtAq
         `;
         console.error(err);
         return interaction.replied ? interaction.followUp(response) : interaction.reply(response);
     }
 
-    hasPermission(interaction, ownerOverride = true) {
+    hasPermission(interaction: ButtonInteraction, ownerOverride = true) {
         if(!this.ownerOnly && !this.userPermissions) return true;
-		if(ownerOverride && this.client.application.owner.id === interaction.member.id) return true;
 
-		if(this.ownerOnly && (ownerOverride || !this.client.application.owner.id === interaction.member.id)) {
-			return `The \`${this.name}\` command can only be used by the bot owner.`;
-		}
+        const member = interaction.member as GuildMember;
+        if(this.client.application?.owner) {
+            if(ownerOverride && this.client.application.owner.id === member.id) return true;
 
-		if(this.userPermissions) {
-			const missing = interaction.channel.permissionsFor(interaction.user).missing(this.userPermissions);
-			if(missing.length > 0) {
-				if(missing.length === 1) {
-					return `The \`${this.name}\` command requires you to have the "${permissions[missing[0]]}" permission.`;
-				}
-				return oneLine`
-					The \`${this.name}\` command requires you to have the following permissions:
-					${missing.map(perm => permissions[perm]).join(', ')}
-				`;
-			}
-		}
-        return true;
+            if(this.ownerOnly && (ownerOverride || this.client.application.owner.id !== member.id)) {
+                return `The \`${this.prefix}\` command can only be used by the bot owner.`;
+            }
+        }
+
+        if(!interaction.guildId || !this.userPermissions) return true;
+
+        const channel = interaction.channel as BaseGuildTextChannel;
+        const missing = channel.permissionsFor(interaction.user)?.missing(this.userPermissions);
+
+        if(!missing || missing.length < 1) return true;
+
+        if(missing.length === 1) {
+            return `The \`${this.prefix}\` command requires you to have the "${permissions[missing[0]]}" permission.`;
+        }
+        return oneLine`
+            The \`${this.prefix}\` command requires you to have the following permissions:
+            ${missing.map(perm => permissions[perm]).join(', ')}
+        `;
     }
 
-    throttle(userID) {
-		if(!this.throttling || this.client.application.owner.id == userID) return null;
+    throttle(userID: string) {
+		if(!this.throttling || this.client.application?.owner?.id == userID) return null;
 
 		let throttle = this._throttles.get(userID);
 		if(!throttle) {
@@ -150,34 +167,37 @@ class Button extends ButtonBuilder {
 		return throttle;
 	}
 
-    onBlock(interaction, reason, data) {
+    onBlock(interaction: ButtonInteraction, reason: string, data: any) {
 		switch(reason) {
 			case 'permission': {
 				if(data.response) return interaction.reply(data.response);
 				return interaction.reply({
-                    content: `You do not have permission to use the \`${this.name}\` command.`,
+                    content: `You do not have permission to use the \`${this.prefix}\` command.`,
                     ephemeral: true
                 });
 			}
 			case 'clientPermissions': {
-				if(data.missing.length === 1) {
+                const missing = data.missing as string[];
+				if(missing.length === 1) {
+                    const missingPerm = missing[0] as PermissionsString;
+                    const permission = PermissionFlagsBits[missingPerm];
                     const reply = {
-                        content: `I need the "${permissions[PermissionFlagsBits[data.missing[0]]]}" permission for the \`${this.name}\` command to work.`,
+                        content: `I need the "${permissions[`${permission}`]}" permission for the \`${this.prefix}\` command to work.`,
                         ephemeral: true
                     };
                     return interaction.reply(reply);
 				}
                 const reply = {
                     content: oneLine`
-					I need the following permissions for the \`${this.name}\` command to work:
-					${data.missing.map(perm => permissions[PermissionFlagsBits[perm]]).join(', ')}`,
+					I need the following permissions for the \`${this.prefix}\` command to work:
+					${data.missing.map((perm: string) => permissions[`${PermissionFlagsBits[perm as PermissionsString]}`]).join(', ')}`,
                     ephemeral: true
                 };
 				return interaction.reply(reply)
 			}
 			case 'throttling': {
 				return interaction.reply({
-                    content: `You may not use the \`${this.name}\` command again for another ${data.remaining.toFixed(1)} seconds.`,
+                    content: `You may not use the \`${this.prefix}\` command again for another ${data.remaining.toFixed(1)} seconds.`,
                     ephemeral: true
                 });
 			}
@@ -192,4 +212,4 @@ class Button extends ButtonBuilder {
 	}
 }
 
-module.exports = Button;
+export default Button;

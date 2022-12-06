@@ -1,18 +1,38 @@
-const { SlashCommandBuilder, ApplicationCommandOptionType, PermissionFlagsBits, ChannelType } = require('discord.js');
-const { permissions } = require('../util');
-const { stripIndent, oneLine } = require('common-tags');
+import { SlashCommandBuilder, 
+        ApplicationCommandOption, 
+        ApplicationCommandOptionType, 
+        PermissionFlagsBits,
+        ChannelType, 
+        CommandInteraction, 
+        GuildMember, 
+        BaseGuildTextChannel, 
+        PermissionsString,
+        RESTPostAPIChatInputApplicationCommandsJSONBody } from 'discord.js';
+import { permissions } from '../util';
+import { stripIndent, oneLine } from 'common-tags';
+import CommandClient from './Client';
+import BaseCommand from './BaseCommand';
+import CommandThrottle from './CommandThrottle';
+import BaseCommandThrottle from "./BaseCommandThrottle.type";
+import InteractionArgument from './InteractionsArgument';
 const valLimit = 2 ** 16;
 
-class Command extends SlashCommandBuilder {
-    constructor(client, data) {
+class Command extends SlashCommandBuilder implements BaseCommand {
+    ownerOnly?: boolean;
+    clientPermissions?: bigint[];
+    userPermissions?: bigint[];
+    throttling?: BaseCommandThrottle;
+    _options?: ApplicationCommandOption[];
+    private _throttles: Map<string, CommandThrottle>;
+
+    constructor(public client: CommandClient, data: any) {
         super();
         this.validateInfo(client, data);
-        Object.defineProperty(this, 'client', { value: client });
         this.setName(data.name)
             .setDescription(data.description)
             .setDMPermission(data.dm_permission)
             .setDefaultMemberPermissions(data.default_member_permissions);
-        this.options = data.options ?? null;
+        this._options = data.options ?? null;
         this.ownerOnly = Boolean(data.ownerOnly);
         this.clientPermissions = data.clientPermissions ?? null;
         this.userPermissions = data.userPermissions ?? null;
@@ -20,12 +40,12 @@ class Command extends SlashCommandBuilder {
         this._throttles = new Map();
     }
 
-    run(interaction, args) {
+    run(interaction: CommandInteraction, args: InteractionArgument[]) {
         throw new Error(`Command '${this.name}' has no 'run()' method`);
     }
 
-    throttle(userID) {
-		if(!this.throttling || this.client.application.owner.id == userID) return null;
+    throttle(userID: string) {
+		if(!this.throttling || this.client.application?.owner?.id == userID) return null;
 
 		let throttle = this._throttles.get(userID);
 		if(!throttle) {
@@ -42,30 +62,35 @@ class Command extends SlashCommandBuilder {
 		return throttle;
 	}
 
-    hasPermission(interaction, ownerOverride = true) {
+    hasPermission(interaction: CommandInteraction, ownerOverride = true) {
         if(!this.ownerOnly && !this.userPermissions) return true;
-		if(ownerOverride && this.client.application.owner.id === interaction.member.id) return true;
 
-		if(this.ownerOnly && (ownerOverride || !this.client.application.owner.id === interaction.member.id)) {
-			return `The \`${this.name}\` command can only be used by the bot owner.`;
-		}
+        const member = interaction.member as GuildMember;
+        if(this.client.application?.owner) {
+            if(ownerOverride && this.client.application.owner.id === member.id) return true;
 
-		if(this.userPermissions) {
-			const missing = interaction.channel.permissionsFor(interaction.user).missing(this.userPermissions);
-			if(missing.length > 0) {
-				if(missing.length === 1) {
-					return `The \`${this.name}\` command requires you to have the "${permissions[missing[0]]}" permission.`;
-				}
-				return oneLine`
-					The \`${this.name}\` command requires you to have the following permissions:
-					${missing.map(perm => permissions[perm]).join(', ')}
-				`;
-			}
-		}
-        return true;
+            if(this.ownerOnly && (ownerOverride || this.client.application.owner.id !== member.id)) {
+                return `The \`${this.name}\` command can only be used by the bot owner.`;
+            }
+        }
+
+        if(!interaction.guildId || !this.userPermissions) return true;
+
+        const channel = interaction.channel as BaseGuildTextChannel;
+        const missing = channel.permissionsFor(interaction.user)?.missing(this.userPermissions);
+
+        if(!missing || missing.length < 1) return true;
+
+        if(missing.length === 1) {
+            return `The \`${this.name}\` command requires you to have the "${permissions[missing[0]]}" permission.`;
+        }
+        return oneLine`
+            The \`${this.name}\` command requires you to have the following permissions:
+            ${missing.map(perm => permissions[perm]).join(', ')}
+        `;
     }
 
-    onBlock(interaction, reason, data) {
+    onBlock(interaction: CommandInteraction, reason: string, data: any) {
 		switch(reason) {
 			case 'permission': {
 				if(data.response) return interaction.reply(data.response);
@@ -75,10 +100,12 @@ class Command extends SlashCommandBuilder {
                 });
 			}
 			case 'clientPermissions': {
-                console.log(data.missing)
-				if(data.missing.length === 1) {
+                const missing = data.missing as string[];
+				if(missing.length === 1) {
+                    const missingPerm = missing[0] as PermissionsString;
+                    const permission = PermissionFlagsBits[missingPerm];
                     const reply = {
-                        content: `I need the "${permissions[PermissionFlagsBits[data.missing[0]]]}" permission for the \`${this.name}\` command to work.`,
+                        content: `I need the "${permissions[`${permission}`]}" permission for the \`${this.name}\` command to work.`,
                         ephemeral: true
                     };
                     return interaction.reply(reply);
@@ -86,7 +113,7 @@ class Command extends SlashCommandBuilder {
                 const reply = {
                     content: oneLine`
 					I need the following permissions for the \`${this.name}\` command to work:
-					${data.missing.map(perm => permissions[PermissionFlagsBits[perm]]).join(', ')}`,
+					${data.missing.map((perm: string) => permissions[`${PermissionFlagsBits[perm as PermissionsString]}`]).join(', ')}`,
                     ephemeral: true
                 };
 				return interaction.reply(reply)
@@ -107,8 +134,7 @@ class Command extends SlashCommandBuilder {
 		}
 	}
 
-    onError(err, interaction) {
-        const owner = this.client.application.owner;
+    onError(err: Error, interaction: CommandInteraction) {
         const response = err.message == 'Cannot read property \'collection\' of undefined' 
                          ? 
                          'Promobot is starting its processes. Please retry in a few minutes'
@@ -116,43 +142,43 @@ class Command extends SlashCommandBuilder {
                          stripIndent`
             An error occured when running the command: \`${err.name}: ${err.message}\`
             You should not have received this error.
-            Please contact ${owner.username}#${owner.tag} in this server: https://discord.gg/dXES6RYtAq
+            Please contact moderators in this server: https://discord.gg/dXES6RYtAq
         `;
         console.error(err);
         return interaction.replied ? interaction.followUp(response) : interaction.reply(response);
     }
 
-    static transformOption(option, received) {
-        const stringType = typeof option.type === 'string' ? option.type : ApplicationCommandOptionType[option.type];
+    static transformOption(option: ApplicationCommandOption, received: any): any {
+        const stringType = ApplicationCommandOptionType[option.type];
         return {
-          type: typeof option.type === 'number' ? option.type : ApplicationCommandOptionType[option.type],
-          name: option.name,
-          description: option.description,
-          required:
-            option.required ?? (stringType === ApplicationCommandOptionType.Subcommand || stringType === ApplicationCommandOptionType.SubcommandGroup ? undefined : false),
-          choices: option.choices,
-          options: option.options?.map(o => this.transformOption(o, received)),
-          channel_types: option.channelTypes,
-          min_value: option.minValue,
-          max_value: option.maxValue,
-          min_length: option.minLength,
-          max_length: option.maxLength
+            type: typeof option.type === 'number' ? option.type : ApplicationCommandOptionType[option.type],
+            name: option.name,
+            description: option.description,
+            required:
+              (option.type === ApplicationCommandOptionType.Subcommand || option.type === ApplicationCommandOptionType.SubcommandGroup ? undefined : option.required ),
+            choices: 'choices' in option ? option.choices : undefined,
+            options: 'options' in option ? option.options?.map(o => this.transformOption(o, received)) : undefined,
+            channel_types: 'channelTypes' in option ? option.channelTypes : undefined,
+            min_value: 'minValue' in option ? option.minValue : undefined,
+            max_value: 'maxValue' in option ? option.maxValue : undefined,
+            min_length: 'minLength' in option ? option.minLength : undefined,
+            max_length: 'maxLength' in option ? option.maxLength : undefined
         };
     }
 
-    validateInfo(client, data) {
+    validateInfo(client: CommandClient, data: Command) {
         if(!client) throw new Error("Client must be specified");
         if(!data) throw new Error("Data must be specified");
         if(data.clientPermissions) {
             if(!Array.isArray(data.clientPermissions)) throw new TypeError("Command.clientPermissions must be an array");
             for(const perm of data.clientPermissions) {
-                if(!permissions[perm]) throw new RangeError(`Invalid command clientPermission: ${perm}`);
+                if(!permissions[`${perm}`]) throw new RangeError(`Invalid command clientPermission: ${perm}`);
             }
         }
         if(data.userPermissions) {
             if(!Array.isArray(data.userPermissions)) throw new TypeError("Command.clientPermissions must be an array");
             for(const perm of data.userPermissions) {
-                if(!permissions[perm]) throw new RangeError(`Invalid command clientPermission: ${perm}`);
+                if(!permissions[`${perm}`]) throw new RangeError(`Invalid command clientPermission: ${perm}`);
             }
         }
         if(data.throttling) {
@@ -166,10 +192,10 @@ class Command extends SlashCommandBuilder {
 			}
 			if(data.throttling.duration < 1) throw new RangeError('Command throttling duration must be at least 1.');
         }
-        this.validateCommand(data);
+        this.validateOptions(data.options as any[]);
     }
 
-    validateCommand(data) {
+    validateOptions(options: any[]) {
         // if(typeof data.name !== 'string') throw new TypeError('Command name must be a string.');
         // if(data.name !== data.name.toLowerCase()) throw new RangeError('Command name must be lower case');
         // if(!/^[\w-]{1,32}$/.test(data.name)) throw new RangeError(`Command name '${data.name}' does not match the regex /^[\w-]{1,32}$/`);
@@ -178,23 +204,23 @@ class Command extends SlashCommandBuilder {
         // if(data.description.length < 1) throw new RangeError('Command description length must be greater than 0');
         // if(data.description.length > 100) throw new RangeError('Command description length must be less than or equal to 100')
 
-        if('defaultPermission' in data && typeof data.defaultPermission !== 'boolean') throw new TypeError('Command default permission must be a boolean');
-        if(data.options) {
-            if(!Array.isArray(data.options)) throw new TypeError('Command options must be an array');
-            if(data.options.length > 25) throw new RangeError('Options length must be 25 or less');
-            for(const option of data.options) {
+        // if('defaultPermission' in data && typeof data.defaultPermission !== 'boolean') throw new TypeError('Command default permission must be a boolean');
+        if(options) {
+            if(!Array.isArray(options)) throw new TypeError('Command options must be an array');
+            if(options.length > 25) throw new RangeError('Options length must be 25 or less');
+            for(const option of options) {
                 this.validateSubcommand(option);
             }
         }   
     }
 
-    validateSubcommand(data) {
+    validateSubcommand(data: ApplicationCommandOption) {
         if(!ApplicationCommandOptionType[data.type]) throw new TypeError(`Subcommand type '${data.type}' is invalid`);
         if(data.name !== data.name.toLowerCase()) throw new RangeError('Subcommand name must be lower case');
         if(!/^[\w-]{1,32}$/.test(data.name)) throw new Error(`Subcommand name '${data.name}' does not match the regex /^[\w-]{1,32}$/`);
         if(typeof data.description !== 'string') throw new TypeError('Subcommand description must be a string.');
         if('required' in data && typeof data.required !== 'boolean') throw new TypeError('Subcommand "required" property must be a boolean');
-        if(data.choices) {
+        if('choices' in data) {
             if(!Array.isArray(data.choices)) throw new TypeError('Subcommand choices must be an array');
             // if(data.type !== 'SUB_COMMAND_GROUP' && data.type !== '2') throw new Error('Subcommand group cannot have the "choices" property');
             if(data.choices.length > 25) throw new RangeError('Subcommand choices must be 25 or less');
@@ -202,15 +228,15 @@ class Command extends SlashCommandBuilder {
                 this.validateChoice(choice);
             }
         } 
-        if(data.options) {
+        if('options' in data) {
             if(!Array.isArray(data.options)) throw new TypeError('Subcommand options must be an array');
-            if(data.type !== ApplicationCommandOptionType.Subcommand && data.type !== '1') throw new Error('Subcommand cannot have the "options" property')
+            if(data.type !== ApplicationCommandOptionType.Subcommand) throw new Error('Subcommand cannot have the "options" property')
             if(data.options.length > 25) throw new RangeError('Options length must be 25 or less');
             for(const option of data.options) {
                 this.validateSubcommand(option)
             }
         }
-        if(data.channelTypes) {
+        if('channelTypes' in data) {
             if(!Array.isArray(data.channelTypes)) throw new TypeError("Command.channelTypes must be an array");
             for(const type of data.channelTypes) {
                 if(!ChannelType[type]) throw new RangeError(`Channel type ${type} is not a valid Channel type`);
@@ -219,31 +245,31 @@ class Command extends SlashCommandBuilder {
         if('minValue' in data) {
             if(data.type === ApplicationCommandOptionType.Number && typeof data.minValue !== 'number') throw new TypeError("Command option minValue must be a Number");
             if(data.type === ApplicationCommandOptionType.Integer && !Number.isInteger(data.minValue)) throw new TypeError("Command option minValue must be an Integer");
-            if(data.minValue < -valLimit) throw new RangeError(`Command option minValue should be greater than ${-valLimit}`); 
+            if(data.minValue! < -valLimit) throw new RangeError(`Command option minValue should be greater than ${-valLimit}`); 
         }
         if('maxValue' in data) {
             if(data.type === ApplicationCommandOptionType.Number && typeof data.maxValue !== 'number') throw new TypeError("Command option maxValue must be a Number");
             if(data.type === ApplicationCommandOptionType.Integer && !Number.isInteger(data.maxValue)) throw new TypeError("Command option maxValue must be an Integer");
-            if(data.maxValue > valLimit) throw new RangeError(`Command option maxValue should be less than ${valLimit}`);
+            if(data.maxValue! > valLimit) throw new RangeError(`Command option maxValue should be less than ${valLimit}`);
         }
         if('minLength' in data) {
             if(data.type !== ApplicationCommandOptionType.String) throw new Error("Command option minLength only allowed for option type String");
             if(!Number.isInteger(data.minLength)) throw new TypeError("Command option minLength must be an integer");
-            if(data.minLength < 0) throw new RangeError("Command option minLength must be greater than or equal to 0");
-            if(data.minLength > 6000) throw new RangeError("Command option minLength must be lesss than or equal to 6000");
+            if(data.minLength! < 0) throw new RangeError("Command option minLength must be greater than or equal to 0");
+            if(data.minLength! > 6000) throw new RangeError("Command option minLength must be lesss than or equal to 6000");
         }
         if('maxLength' in data) {
             if(data.type !== ApplicationCommandOptionType.String) throw new Error("Command option maxLength only allowed for option type String");
             if(!Number.isInteger(data.maxLength)) throw new TypeError("Command option maxLength must be an integer");
-            if(data.maxLength < 1) throw new RangeError("Command option maxLength must be greater than or equal to 1");
-            if(data.maxLength > 6000) throw new RangeError("Command option maxLength must be lesss than or equal to 6000");
+            if(data.maxLength! < 1) throw new RangeError("Command option maxLength must be greater than or equal to 1");
+            if(data.maxLength! > 6000) throw new RangeError("Command option maxLength must be lesss than or equal to 6000");
         }
     }
 
-    validateChoice(data) {
+    validateChoice(data: { name: string, value: number | string}) {
         if(typeof data.name !== 'string') throw new TypeError("Command choice name must be a string");
         if(typeof data.value !== 'number' && typeof data.value !== 'string') throw new TypeError("Command choice value must be a number or a string");
     }
 }
 
-module.exports = Command;
+export default Command;
