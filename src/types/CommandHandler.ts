@@ -51,6 +51,11 @@ class CommandHandler extends BaseHandler<Command, CommandInteraction> {
 	parseArgs(interaction: CommandInteraction, command: Command) {
 		if(!command || !command._options || command._options.length < 1) return [];
 
+		let options = interaction.options?.data;
+        while(options instanceof Array && options[0]?.options) {
+            options = options[0].options;
+        }
+
 		const args = Object.assign({}, ...interaction.options?.data.map(o => {
 			let res: any = {};
 			const option = command._options!.find(opt => opt.name === o.name);
