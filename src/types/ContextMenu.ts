@@ -11,7 +11,7 @@ class ContextMenu extends ContextMenuCommandBuilder implements BaseCommand {
         this.setDefaultMemberPermissions(data.default_member_permissions);
     }
 
-    async run(interaction: ContextMenuCommandInteraction) {
+    run(interaction: ContextMenuCommandInteraction) {
         throw new Error(`Context menu '${this.name}' has no 'run()' method`);
     }
 

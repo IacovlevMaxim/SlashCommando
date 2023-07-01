@@ -1,4 +1,4 @@
-declare type InteractionArgument = {
+type InteractionArgument = {
     [name: string]: any;
 };
 export default InteractionArgument;

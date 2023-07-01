@@ -1,5 +1,5 @@
 /// <reference types="node" />
-declare type CommandThrottle = {
+type CommandThrottle = {
     start: number;
     usages: number;
     timeout: NodeJS.Timeout;

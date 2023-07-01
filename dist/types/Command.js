@@ -163,9 +163,8 @@ class Command extends discord_js_1.SlashCommandBuilder {
         return interaction.replied ? interaction.followUp(response) : interaction.reply(response);
     }
     static transformOption(option, received) {
-        const stringType = discord_js_1.ApplicationCommandOptionType[option.type];
         return {
-            type: typeof option.type === 'number' ? option.type : discord_js_1.ApplicationCommandOptionType[option.type],
+            type: option.type,
             name: option.name,
             description: option.description,
             required: (option.type === discord_js_1.ApplicationCommandOptionType.Subcommand || option.type === discord_js_1.ApplicationCommandOptionType.SubcommandGroup ? undefined : option.required),

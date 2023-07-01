@@ -1,4 +1,4 @@
-declare type BaseCommandThrottle = {
+type BaseCommandThrottle = {
     usages: number;
     duration: number;
 };

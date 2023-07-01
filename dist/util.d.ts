@@ -1,4 +1,4 @@
-declare type Permissions = {
+type Permissions = {
     [int: string]: string;
 };
 declare const permissions: Permissions;

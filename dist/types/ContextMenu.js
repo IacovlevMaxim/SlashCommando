@@ -9,7 +9,7 @@ class ContextMenu extends discord_js_1.ContextMenuCommandBuilder {
         this.setType(data.type);
         this.setDefaultMemberPermissions(data.default_member_permissions);
     }
-    async run(interaction) {
+    run(interaction) {
         throw new Error(`Context menu '${this.name}' has no 'run()' method`);
     }
     onError(err, interaction) {

@@ -6,8 +6,8 @@ import { SlashCommandBuilder,
         CommandInteraction, 
         GuildMember, 
         BaseGuildTextChannel, 
-        PermissionsString,
-        RESTPostAPIChatInputApplicationCommandsJSONBody } from 'discord.js';
+        PermissionsString
+     } from 'discord.js';
 import { permissions } from '../util';
 import { stripIndent, oneLine } from 'common-tags';
 import CommandClient from './Client';
@@ -149,9 +149,8 @@ class Command extends SlashCommandBuilder implements BaseCommand {
     }
 
     static transformOption(option: ApplicationCommandOption, received: any): any {
-        const stringType = ApplicationCommandOptionType[option.type];
         return {
-            type: typeof option.type === 'number' ? option.type : ApplicationCommandOptionType[option.type],
+            type: option.type,
             name: option.name,
             description: option.description,
             required:

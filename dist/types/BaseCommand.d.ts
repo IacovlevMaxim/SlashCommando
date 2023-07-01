@@ -2,8 +2,8 @@ import { ApplicationCommandOption, BaseInteraction, InteractionResponse, Message
 import InteractionArgument from './InteractionsArgument';
 import BaseCommandThrottle from "./BaseCommandThrottle.type";
 import CommandThrottle from './CommandThrottle';
-declare type Response = Message | InteractionResponse;
-declare type BlockReason = 'permission' | 'clientPermissions' | 'throttling' | 'invalidArg' | string;
+type Response = Message | InteractionResponse;
+type BlockReason = 'permission' | 'clientPermissions' | 'throttling' | 'invalidArg' | string;
 interface BaseCommand {
     clientPermissions?: bigint[];
     throttling?: BaseCommandThrottle;
